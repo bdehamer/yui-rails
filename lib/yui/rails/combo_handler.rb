@@ -2,8 +2,29 @@ module YUI
   module Rails
     class ComboHandler
 
-      def initialize(app)
+      class << self
+        attr_accessor :routes
+
+        def routes
+          @routes ||= []
+        end
+
+        def configure
+          yield self
+          true
+        end
+      end
+
+      attr_reader :routes
+
+      def initialize(app, routes=[])
         @app = app
+
+        # Coerce routes into an array
+        routes = [routes] unless routes.kind_of? Array 
+
+        # Merge and routes configured at class-level
+        @routes = routes << self.class.routes
       end
 
       def call(env)
@@ -13,6 +34,7 @@ module YUI
           @app.call(env)
         end
       end
+
 
       protected
 
@@ -54,7 +76,7 @@ module YUI
       end
 
       def map_request_url(path)
-        route = YUI::Rails.routes.find do |route|
+        route = routes.find do |route|
           path.start_with?(route.keys.first)
         end
 
