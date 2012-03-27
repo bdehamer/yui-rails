@@ -3,10 +3,19 @@ module YUI
     class ComboHandler
 
       class << self
+
+        # Collection of routes that the combo handler will serve.
+        # Each route in the array should be a hash of the form
+        # <url_prefix> => <fully_qualified_asset_directory>
         attr_accessor :routes
 
         def routes
           @routes ||= []
+        end
+
+        # Add a single route to the collection
+        def add_route(prefix, asset_path)
+          routes << {prefix => asset_path}
         end
 
         def configure
@@ -23,11 +32,15 @@ module YUI
         # Coerce routes into an array
         routes = [routes] unless routes.kind_of? Array 
 
-        # Merge and routes configured at class-level
-        @routes = routes << self.class.routes
+        # Merge with routes configured at class-level
+        @routes = routes | self.class.routes
       end
 
       def call(env)
+
+        # This middleware will only handle a request if the
+        # requested URL starts with one of the prefixes specified
+        # in the routes collection.
         if (asset_path = map_request_url(env['PATH_INFO']))
           combine_resources(asset_path, env['QUERY_STRING'])
         else
@@ -49,9 +62,9 @@ module YUI
 
         [200, headers, [contents]]
       rescue Errno::ENOENT # File not found
-        [404, {}, []]
+        [404, {}, ['Not Found']]
       rescue Exception
-        [403, {}, []]
+        [403, {}, ['Unauthorized']]
       end
 
       def combine_files(base_path, file_list)
