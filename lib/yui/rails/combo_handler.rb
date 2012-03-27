@@ -57,7 +57,9 @@ module YUI
 
         headers = { 
           'Content-Type' => lookup_content_type(file_list.first).to_s,
-          'Content-Length' => contents.size.to_s
+          'Content-Length' => contents.size.to_s,
+          'Cache-Control' => "public,max-age=#{1.year.to_i.to_s}",
+          'Expires' => 1.year.from_now.httpdate
         }
 
         [200, headers, [contents]]
